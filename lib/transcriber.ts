@@ -22,7 +22,8 @@ export const transcribeAudio = async (
     model: config.whisperModel,
     response_format: 'verbose_json'
     });
-    let filTranscription = transcription.segments.map(s => s.no_speech_prob < (noSpeechProb || 1e-3) ? s.text : "").join(" ");
+    let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 1e-3) ? s.text : "").join(" ");
+
     return filTranscription;
   } catch (error) {
     console.error("Error transcribing audio:", error);
