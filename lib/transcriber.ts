@@ -20,9 +20,10 @@ export const transcribeAudio = async (
     transcription = await groq.audio.transcriptions.create({
     file: await toFile(audioBlob as Blob, `audio-${(timestamp || Date.now())}.wav`),
     model: config.whisperModel,
-    response_format: 'verbose_json'
+    response_format: 'verbose_json',
+    prompt: "Groq, Jonathan Ross, LPU, Whisper, OpenAI. Return empty if nothing is spoken."
     });
-    let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 1e-3) ? s.text : "").join(" ");
+    let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob > (noSpeechProb || 1e-4) ? s.text : "").join(" ");
 
     return filTranscription;
   } catch (error) {

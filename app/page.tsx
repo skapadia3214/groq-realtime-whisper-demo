@@ -16,14 +16,14 @@ export default function Chat() {
 
   return (
     <div className="absolute flex flex-col justify-center items-center h-full w-full space-y-4">
+      <Microphone onTranscription={submitTranscript} noSpeechProb={1e-3}/>
       <Button
         onClick={clearTranscript}
         className="rounded-none"
       >
         Clear Transcript
       </Button>
-      <Microphone onTranscription={submitTranscript} noSpeechProb={1e-5}/>
-      <span className="p-4 border w-full max-w-lg text-left">
+      <span className="p-4 border w-full max-w-lg max-h-30 text-left overflow-auto">
         {transcript}
       </span>
     </div>
