@@ -18,15 +18,15 @@ export default function Chat() {
 
   return (
     <div className="absolute flex flex-col justify-center items-center h-full w-full space-y-4">
-      <div className="">
+      <div className="mb-6">
         <Link
           href={"https://groq.com"}
         >
         <Image
           src="/banner.png"
           alt='Powered by Groq'
-          height={400}
-          width={400}
+          height={380}
+          width={380}
         />
         </Link>
       </div>
