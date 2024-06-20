@@ -53,14 +53,19 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
     const new_transcription = await transcribeAudio(formData, Date.now(), noSpeechProb);
 
     curTranscript.current = new_transcription;
-    setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
-
+    
     let audio_len = chunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0);
-    if (audio_len >= 80000) {
-      console.log("Window passed. Resetting recorder and processing new chunks.");
+    if (audio_len >= 100000) {
       frzTranscript.current += " " + curTranscript.current;
       curTranscript.current = "";
+      // console.log("Frz trcp: ", frzTranscript.current);
+      // console.log("curr trcp: ", curTranscript.current);
+      setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
       resetAndInitializeRecorder(); // Reset and restart the recorder
+    } else {
+      console.log("Frz trcp: ", frzTranscript.current);
+      console.log("curr trcp: ", curTranscript.current);
+      setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
     }
   };
 
