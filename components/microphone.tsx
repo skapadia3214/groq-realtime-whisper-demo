@@ -7,11 +7,13 @@ import React, { useRef, useState, useEffect } from "react";
 
 const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }) => {
   const [recording, setRecording] = useState(false);
-  const [transcription, setTranscription] = useState("");
+  const isActive = useRef(true); // Ref to track if transcription should be active
+  const frzTranscript = useRef<string>("");
+  const curTranscript = useRef<string>("");
+  const [transcript, setTranscript] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const startTimeRef = useRef<number | null>(null);
-  const currentMinuteRef = useRef<number>(0);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const toggleRecording = () => {
     if (recording) {
@@ -22,60 +24,69 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
     setRecording(!recording);
   };
 
-  const startRecording = () => {
+  const resetAndInitializeRecorder = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop(); // Stop the recording
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop()); // Stop the media stream tracks
+    }
+
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      streamRef.current = stream;
+      isActive.current = true; // Set the active flag to true when starting
       const options = { mimeType: "audio/webm" };
       mediaRecorderRef.current = new MediaRecorder(stream, options);
-      startTimeRef.current = Date.now();
-      mediaRecorderRef.current.addEventListener(
-        "dataavailable",
-        async (event: BlobEvent) => {
-          if (event.data.size > 0) {
-            const currentTime = Date.now();
-            const elapsedMinutes = Math.floor((currentTime - startTimeRef.current!) / 60000);
-
-            if (elapsedMinutes > currentMinuteRef.current) {
-              // More than a minute has passed, process new chunks only
-              chunksRef.current = [event.data]; // Reset with the current chunk only
-              currentMinuteRef.current = elapsedMinutes; // Update current minute
-            } else {
-              // Still within the same minute, accumulate chunks
-              chunksRef.current.push(event.data);
-            }
-
-            const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-            const formData = new FormData();
-            formData.append("audio", audioBlob);
-            const new_transcription = await transcribeAudio(formData, currentTime, noSpeechProb);
-
-            if (elapsedMinutes > currentMinuteRef.current) {
-              setTranscription(prevTranscript => `${prevTranscript} ${new_transcription}`);
-            } else {
-              setTranscription(new_transcription);
-            }
-          }
-        },
-      );
-      mediaRecorderRef.current.start(800);
+      chunksRef.current = [];
+      mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable);
+      mediaRecorderRef.current.start(800); // Start recording and emit chunks every 800ms
     });
   };
 
+  const handleDataAvailable = async (event: BlobEvent) => {
+    if (!isActive.current || event.data.size === 0) {
+      return; // Skip processing if recording has been stopped
+    }
+
+    chunksRef.current.push(event.data);
+    const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+    const formData = new FormData();
+    formData.append("audio", audioBlob);
+    const new_transcription = await transcribeAudio(formData, Date.now(), noSpeechProb);
+
+    curTranscript.current = new_transcription;
+    setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
+
+    let audio_len = chunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0);
+    if (audio_len >= 80000) {
+      console.log("Window passed. Resetting recorder and processing new chunks.");
+      frzTranscript.current += " " + curTranscript.current;
+      curTranscript.current = "";
+      resetAndInitializeRecorder(); // Reset and restart the recorder
+    }
+  };
+
+  const startRecording = () => {
+    resetAndInitializeRecorder();
+  };
+
   const stopRecording = async () => {
+    isActive.current = false; // Set the active flag to false
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop()); // Stop the audio track
+      mediaRecorderRef.current.stop(); // Stop the recording
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop()); // Stop the media stream tracks
+      }
     }
   };
 
   useEffect(() => {
-    onTranscription(transcription);
-  }, [transcription]);
+    onTranscription(transcript);
+  }, [transcript]);
 
   return (
     <Mic 
       className={cn(
-        (recording ? "bg-red-400 animate-pulse" : ""),
-        "h-20 w-20 border p-4 cursor-pointer rounded-full hover:bg-slate-200"
+        (recording ? "bg-red-400 animate-pulse" : "hover:bg-slate-200"),
+        "h-20 w-20 border p-4 cursor-pointer rounded-full"
       )}
       onClick={toggleRecording}
     />
