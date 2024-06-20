@@ -63,8 +63,6 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
       setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
       resetAndInitializeRecorder(); // Reset and restart the recorder
     } else {
-      console.log("Frz trcp: ", frzTranscript.current);
-      console.log("curr trcp: ", curTranscript.current);
       setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
     }
   };
