@@ -9,7 +9,6 @@ export default function Chat() {
   const [transcript, setTranscript] = useState<string>("");
 
   const submitTranscript = (newTranscript: string) => {
-    const delta = Math.abs(transcript.length - newTranscript.length);
     setTranscript(newTranscript);
   }
 

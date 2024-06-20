@@ -22,7 +22,7 @@ export const transcribeAudio = async (
       file: await toFile(audioBlob, `audio-${(timestamp || Date.now())}.wav`),
       model: config.whisperModel,
       response_format: 'verbose_json',
-      prompt: "Groq, GROQ, Jonathan Ross, LPU, Whisper, OpenAI. Return empty if nothing is spoken."
+      prompt: "Groq, GROQ, Jonathan Ross, LPU, Whisper, OpenAI, Inference"
     });
     let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 0.1) ? s.text : "").join(" ");
 

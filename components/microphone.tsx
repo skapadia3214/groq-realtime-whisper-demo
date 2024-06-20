@@ -55,7 +55,7 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
     curTranscript.current = new_transcription;
     
     let audio_len = chunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0);
-    if (audio_len >= 100000) {
+    if (audio_len >= 300000) {
       frzTranscript.current += " " + curTranscript.current;
       curTranscript.current = "";
       // console.log("Frz trcp: ", frzTranscript.current);
