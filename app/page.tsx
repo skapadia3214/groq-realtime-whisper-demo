@@ -38,7 +38,7 @@ export default function Chat() {
       >
         Clear Transcript
       </Button>
-      <span className="p-4 border w-full max-w-lg max-h-30 text-left text-md text-groqPrimary1 overflow-auto">
+      <span className="p-4 border w-full max-w-lg max-h-30 text-left text-md text-[#434343] overflow-auto">
         {transcript}
       </span>
     </div>
