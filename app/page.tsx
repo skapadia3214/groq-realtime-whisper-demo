@@ -2,6 +2,8 @@
 import Microphone from '@/components/microphone';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Chat() {
   const [transcript, setTranscript] = useState<string>("");
@@ -16,16 +18,30 @@ export default function Chat() {
 
   return (
     <div className="absolute flex flex-col justify-center items-center h-full w-full space-y-4">
-      <Microphone onTranscription={submitTranscript} noSpeechProb={1e-3}/>
+      <div className="">
+        <Link
+          href={"https://groq.com"}
+        >
+        <Image
+          src="/banner.png"
+          alt='Powered by Groq'
+          height={400}
+          width={400}
+        />
+        </Link>
+      </div>
+      <Microphone onTranscription={submitTranscript} noSpeechProb={parseFloat(process.env.NEXT_PUBLIC_NO_SPEECH_THRESHOLD!)}/>
       <Button
         onClick={clearTranscript}
-        className="rounded-none"
+        className="rounded-none text-groqPrimary1 hover:text-groqPrimary1 text-md"
+        variant='outline'
       >
         Clear Transcript
       </Button>
-      <span className="p-4 border w-full max-w-lg max-h-30 text-left overflow-auto">
+      <span className="p-4 border w-full max-w-lg max-h-30 text-left text-md text-groqPrimary1 overflow-auto">
         {transcript}
       </span>
     </div>
   );
+  
 }

@@ -2,7 +2,6 @@
 import { transcribeAudio } from "@/lib/transcriber";
 import { cn } from "@/lib/utils";
 import { MicrophoneProps } from "@/lib/types";
-import { Button } from "./ui/button";
 import { Mic } from "lucide-react";
 import React, { useRef, useState, useEffect } from "react";
 
@@ -57,7 +56,7 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
           }
         },
       );
-      mediaRecorderRef.current.start(1000); // Emit a blob every 1000ms
+      mediaRecorderRef.current.start(800);
     });
   };
 

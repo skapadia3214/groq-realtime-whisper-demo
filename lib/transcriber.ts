@@ -23,7 +23,8 @@ export const transcribeAudio = async (
     response_format: 'verbose_json',
     prompt: "Groq, Jonathan Ross, LPU, Whisper, OpenAI. Return empty if nothing is spoken."
     });
-    let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob > (noSpeechProb || 1e-4) ? s.text : "").join(" ");
+    console.log(transcription);
+    let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 0.1) ? s.text : "").join(" ");
 
     return filTranscription;
   } catch (error) {
