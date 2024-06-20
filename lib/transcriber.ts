@@ -2,9 +2,6 @@
 import "server-only";
 import { toFile } from "openai";
 import Groq from "groq-sdk";
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
 
 const groq = new Groq();
 
