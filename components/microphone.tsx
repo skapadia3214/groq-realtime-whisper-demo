@@ -37,7 +37,7 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
       mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable);
-      mediaRecorderRef.current.start(800); // Start recording and emit chunks every 800ms
+      mediaRecorderRef.current.start(parseInt(process.env.NEXT_PUBLIC_EMIT_DELAY!)); // Start recording and emit chunks every certain time period
     });
   };
 

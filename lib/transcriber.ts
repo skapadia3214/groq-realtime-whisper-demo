@@ -27,8 +27,8 @@ export const transcribeAudio = async (
     });
     let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 0.1) ? s.text : "").join(" ");
     // console.log({
-      // rawTranscription: transcription,
-      // filTranscription: filTranscription
+    //   rawTranscription: transcription,
+    //   filTranscription: filTranscription
     // })
     return filTranscription;
   } catch (error) {
