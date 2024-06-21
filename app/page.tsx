@@ -23,7 +23,7 @@ export default function Chat() {
           href={"https://groq.com"}
         >
         <Image
-          src="/banner.png"
+          src="/banner.svg"
           alt='Powered by Groq'
           height={380}
           width={380}
