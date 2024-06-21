@@ -1,7 +1,6 @@
 "use server";
 import "server-only";
-import { toFile } from "openai";
-import Groq from "groq-sdk";
+import { toFile, Groq } from "groq-sdk";
 
 const groq = new Groq();
 
