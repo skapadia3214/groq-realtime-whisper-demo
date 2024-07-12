@@ -54,3 +54,12 @@ export type Message = {
   role: "ai" | "human";
   text: string;
 };
+
+
+export interface ChatResponse {
+  response: string | null;
+  comp_tokens: number;
+  comp_time: number | undefined;
+  prompt_tokens: number;
+  prompt_time: number | undefined;
+}

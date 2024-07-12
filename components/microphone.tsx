@@ -1,13 +1,17 @@
 "use client";
 import { transcribeAudio } from "@/lib/transcriber";
 import { cn } from "@/lib/utils";
-import { MicrophoneProps } from "@/lib/types";
 import { Mic } from "lucide-react";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
+
+export interface MicrophoneProps {
+  onTranscription: (transcription: string, rtf: number | null) => void;
+  noSpeechProb?: number;
+}
 
 const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }) => {
   const [recording, setRecording] = useState(false);
-  const isActive = useRef(true); // Ref to track if transcription should be active
+  const isActive = useRef(true);
   const frzTranscript = useRef<string>("");
   const curTranscript = useRef<string>("");
   const [transcript, setTranscript] = useState("");
@@ -26,31 +30,31 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
 
   const resetAndInitializeRecorder = () => {
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop(); // Stop the recording
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop()); // Stop the media stream tracks
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
     }
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       streamRef.current = stream;
-      isActive.current = true; // Set the active flag to true when starting
+      isActive.current = true;
       const options = { mimeType: "audio/webm" };
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
       mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable);
-      mediaRecorderRef.current.start(parseInt(process.env.NEXT_PUBLIC_EMIT_DELAY!)); // Start recording and emit chunks every certain time period
+      mediaRecorderRef.current.start(parseInt(process.env.NEXT_PUBLIC_EMIT_DELAY!));
     });
   };
 
   const handleDataAvailable = async (event: BlobEvent) => {
     if (!isActive.current || event.data.size === 0) {
-      return; // Skip processing if recording has been stopped
+      return;
     }
 
     chunksRef.current.push(event.data);
     const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
     const formData = new FormData();
     formData.append("audio", audioBlob);
-    const new_transcription = await transcribeAudio(formData, Date.now(), noSpeechProb);
+    const { transcript: new_transcription, rtf } = await transcribeAudio(formData, Date.now(), noSpeechProb);
 
     curTranscript.current = new_transcription;
     
@@ -58,12 +62,12 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
     if (audio_len >= 300000) {
       frzTranscript.current += " " + curTranscript.current;
       curTranscript.current = "";
-      // console.log("Frz trcp: ", frzTranscript.current);
-      // console.log("curr trcp: ", curTranscript.current);
       setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
-      resetAndInitializeRecorder(); // Reset and restart the recorder
+      onTranscription(frzTranscript.current.trim() + " " + curTranscript.current.trim(), rtf);
+      resetAndInitializeRecorder();
     } else {
       setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
+      onTranscription(frzTranscript.current.trim() + " " + curTranscript.current.trim(), rtf);
     }
   };
 
@@ -72,18 +76,14 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
   };
 
   const stopRecording = async () => {
-    isActive.current = false; // Set the active flag to false
+    isActive.current = false;
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop(); // Stop the recording
+      mediaRecorderRef.current.stop();
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop()); // Stop the media stream tracks
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
     }
   };
-
-  useEffect(() => {
-    onTranscription(transcript);
-  }, [transcript]);
 
   return (
     <Mic 

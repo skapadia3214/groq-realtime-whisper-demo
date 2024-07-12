@@ -1,26 +1,62 @@
-import { ChatGroq } from '@langchain/groq';
-import { LangChainAdapter, Message, StreamingTextResponse } from 'ai';
-import { AIMessage, HumanMessage } from '@langchain/core/messages';
+import { ChatResponse } from '@/lib/types';
+import Groq from 'groq-sdk';
+import { NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const defaultInst = `\
+Your task is to correct any errors, improve grammar and clarity, \
+and ensure the transcript is coherent and accurate.\
+`
+export async function POST(req: Request): Promise<NextResponse<ChatResponse>> {
   const {
-    messages,
+    query,
+    systemPrompt,
+    model,
+    ...args
   }: {
-    messages: Message[];
+    query: string;
+    systemPrompt?: string;
+    model?: string;
+    [key: string]: any;
   } = await req.json();
 
-  const model = new ChatGroq({
-    model: 'llama3-70b-8192',
-    temperature: 0,
+
+  const SystemPrompt = `\
+  You are an AI assistant that translates, converts transcripts based on the instructions given to you. \
+  Instructions:
+  ${systemPrompt ? systemPrompt : defaultInst}
+
+  The transcript is provided within the <Transcript></Transcript> tags. \
+  Your response should ONLY contain the changed transcript based on the instruction provided \
+  with <Converted></Converted> tags. \ 
+  If the transcript is empty, do not add anything between then <Transcript></Transcript> tags.\
+  `
+
+  const UserPrompt = `<Transcript> ${query} </Transcript>`
+  const response = await client.chat.completions.create({
+    model: 'llama3-8b-8192',
+    messages: [
+      {
+        role: "system",
+        content: SystemPrompt
+      },
+      {
+        role: "user",
+        content: UserPrompt
+      }
+    ],
+    ...args
+  })
+  const regex = /<Converted>(.*?)<\/Converted>/;
+  const match = regex.exec(response.choices[0].message.content ? response.choices[0].message.content : "<Transcript></Transcript>");
+  const output = match ? match[1] : '';
+
+  return NextResponse.json({
+    response: output,
+    comp_tokens: response.usage!.completion_tokens,
+    comp_time: response.usage!.completion_time,
+    prompt_tokens: response.usage!.prompt_tokens,
+    prompt_time: response.usage!.prompt_time,
   });
-
-  const stream = await model.stream(
-    messages.map(message =>
-      message.role == 'user'
-        ? new HumanMessage(message.content)
-        : new AIMessage(message.content),
-    ),
-  );
-
-  return new StreamingTextResponse(LangChainAdapter.toAIStream(stream));
 }
