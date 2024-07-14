@@ -28,9 +28,12 @@ export async function POST(req: Request): Promise<NextResponse<ChatResponse>> {
   ${systemPrompt ? systemPrompt : defaultInst}
 
   The transcript is provided within the <Transcript></Transcript> tags. \
-  Your response should ONLY contain the changed transcript based on the instruction provided \
-  with <Converted></Converted> tags. \ 
-  If the transcript is empty, do not add anything between then <Transcript></Transcript> tags.\
+  Your response should be JSON formatted containing the changed transcript based on the instruction provided. \
+  Here is the JSON schema:
+  {
+    "transcript": "Converted Transcript here"
+  }
+  Make sure to escape any special characters that might cause any errors in your JSON response.\
   `
 
   const UserPrompt = `<Transcript> ${query} </Transcript>`
@@ -46,11 +49,10 @@ export async function POST(req: Request): Promise<NextResponse<ChatResponse>> {
         content: UserPrompt
       }
     ],
+    response_format: {'type': 'json_object'},
     ...args
   })
-  const regex = /<Converted>(.*?)<\/Converted>/;
-  const match = regex.exec(response.choices[0].message.content ? response.choices[0].message.content : "<Transcript></Transcript>");
-  const output = match ? match[1] : '';
+  const output = JSON.parse(response.choices[0].message.content!).transcript;
 
   return NextResponse.json({
     response: output,

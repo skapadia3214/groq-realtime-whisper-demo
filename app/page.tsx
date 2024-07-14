@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChatResponse } from '@/lib/types';
+import ReactMarkdown from 'react-markdown';
 
 interface Model {
   id: string;
@@ -182,9 +183,9 @@ export default function Chat() {
         </div>
         
         <div className="w-full p-4 border max-h-60 overflow-auto">
-          <p className="text-left text-md text-[#434343]">
+          <ReactMarkdown className="text-left text-md text-[#434343]">
             {transcript}
-          </p>
+          </ReactMarkdown>
         </div>
         
         <div className="w-full text-sm text-gray-500">
