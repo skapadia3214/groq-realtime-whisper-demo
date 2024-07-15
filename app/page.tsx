@@ -2,6 +2,7 @@
 import Microphone from '@/components/microphone';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -10,6 +11,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChatResponse } from '@/lib/types';
 import ReactMarkdown from 'react-markdown';
+import { HelpCircle } from 'lucide-react';
 
 interface Model {
   id: string;
@@ -127,7 +129,7 @@ export default function Chat() {
         
         <div className="w-full flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 sm:space-x-4">
           <Select onValueChange={setSelectedModel} value={selectedModel}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] rounded-none">
               <SelectValue placeholder="Select model" />
             </SelectTrigger>
             <SelectContent>
@@ -140,25 +142,53 @@ export default function Chat() {
           </Select>
           
           <div className="flex items-center space-x-2">
-            <Switch
-              id="auto-refine"
-              checked={autoRefine}
-              onCheckedChange={setAutoRefine}
-            />
-            <label htmlFor="auto-refine">Auto Refine</label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="auto-refine"
+                      checked={autoRefine}
+                      onCheckedChange={setAutoRefine}
+                    />
+                    <label htmlFor="auto-refine">Auto Refine</label>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>When enabled, automatically refines the transcript using the LLM and instructions provided in realtime</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle 
+                  size={16} 
+                  className="text-gray-500 cursor-pointer" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>When enabled, automatically refines the transcript using the LLM and instructions provided in realtime</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
         
         <div className="w-full space-y-2">
           <Label htmlFor="system-prompt" className="text-sm font-medium">
-            System Prompt
+            Instructions
           </Label>
           <Textarea
             id="system-prompt"
-            placeholder="Custom system prompt (optional)"
+            placeholder="Instructions for refining/changing the transcript in realtime (optional)"
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
-            className="w-full min-h-[100px]"
+            className="w-full min-h-[100px] max-h-[400px] rounded-none"
           />
         </div>
         
@@ -172,14 +202,39 @@ export default function Chat() {
           >
             Clear Transcript
           </Button>
-          <Button
-            onClick={() => handleRefineTranscript()}
-            className="rounded-none text-groqPrimary1 hover:text-groqPrimary1 text-md"
-            variant='outline'
-            disabled={!transcript || isRefining || autoRefine || !selectedModel}
-          >
-            {isRefining ? 'Refining...' : 'Refine Transcript'}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => handleRefineTranscript()}
+                  className="rounded-none text-groqPrimary1 hover:text-groqPrimary1 text-md"
+                  variant='outline'
+                  disabled={!transcript || isRefining || autoRefine || !selectedModel}
+                >
+                  {isRefining ? 'Refining...' : 'Refine Transcript'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Manually refine the current transcript using the selected model</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider delayDuration={0}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="p-0 h-auto"
+                  disabled={!transcript || isRefining || autoRefine || !selectedModel}
+                >
+                  <HelpCircle size={16} className="text-gray-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Manually refine the current transcript using the selected model</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         
         <div className="w-full p-4 border max-h-60 overflow-auto">
@@ -198,5 +253,5 @@ export default function Chat() {
         </div>
       </div>
     </div>
-  );
+  );;
 }
