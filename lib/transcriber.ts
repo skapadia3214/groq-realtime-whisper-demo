@@ -2,13 +2,16 @@
 import "server-only";
 import { toFile, Groq } from "groq-sdk";
 
-const groq = new Groq();
 
 export const transcribeAudio = async (
   formData: FormData,
+  apiKey: string,
   timestamp?: number,
   noSpeechProb?: number
 ) => {
+  const groq = new Groq({
+    apiKey: apiKey
+  });
   const audioBlob = formData.get("audio") as Blob;
   const config = {
     whisperModelProvider: "groq",
@@ -32,10 +35,6 @@ export const transcribeAudio = async (
     const rtf = audioDuration / processingTime;
 
     let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 0.1) ? s.text : "").join(" ");
-    // console.log({
-    //   transcription,
-    //   filTranscription
-    // })
     return {
       transcript: filTranscription,
       rtf: rtf

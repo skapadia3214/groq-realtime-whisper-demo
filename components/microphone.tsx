@@ -1,15 +1,12 @@
 "use client";
 import { transcribeAudio } from "@/lib/transcriber";
+import { MicrophoneProps } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Mic } from "lucide-react";
 import React, { useRef, useState } from "react";
 
-export interface MicrophoneProps {
-  onTranscription: (transcription: string, rtf: number | null) => void;
-  noSpeechProb?: number;
-}
 
-const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }) => {
+const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, apiKey }) => {
   const [recording, setRecording] = useState(false);
   const isActive = useRef(true);
   const frzTranscript = useRef<string>("");
@@ -54,7 +51,12 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb }
     const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
     const formData = new FormData();
     formData.append("audio", audioBlob);
-    const { transcript: new_transcription, rtf } = await transcribeAudio(formData, Date.now(), noSpeechProb);
+    const { transcript: new_transcription, rtf } = await transcribeAudio(
+      formData, 
+      apiKey,
+      Date.now(), 
+      noSpeechProb
+    );
 
     curTranscript.current = new_transcription;
     

@@ -54,7 +54,9 @@ const config = {
         },
         groqPrimary1: "#F55036",
         groqPrimary2: "#FFFFFF",
-        groqPrimary3: "#000000"
+        groqPrimary3: "#000000",
+        groqSecondary1: "#FA7828",
+        groqHighlight: "#f57566"
       },
       borderRadius: {
         lg: "var(--radius)",

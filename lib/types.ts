@@ -1,9 +1,3 @@
-import { CoreMessage } from 'ai'
-
-// export type Message = CoreMessage & {
-//   id: string
-// }
-
 export interface Chat extends Record<string, any> {
   id: string
   title: string
@@ -40,10 +34,12 @@ export interface User extends Record<string, any> {
   salt: string
 }
 
-export type MicrophoneProps = {
-    onTranscription: (transcription: string) => void;
-    noSpeechProb?: number;
-  };
+export interface MicrophoneProps {
+  onTranscription: (transcription: string, rtf: number | null) => void;
+  noSpeechProb?: number;
+  apiKey: string;
+}
+
 
 export type UIState = {
   id: string

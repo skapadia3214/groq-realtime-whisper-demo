@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { ChatResponse } from '@/lib/types';
 import ReactMarkdown from 'react-markdown';
 import { HelpCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
 
 interface Model {
   id: string;
@@ -38,6 +40,8 @@ export default function Chat() {
   const [systemPrompt, setSystemPrompt] = useState<string>(defaultSystemPrompt);
   const [models, setModels] = useState<Model[]>([]);
   const [speedInsights, setSpeedInsights] = useState<SpeedInsights>({ sttRTF: null, ctps: null });
+  const [apiKey, setApiKey] = useState<string>("");
+  const router = useRouter();
 
   useEffect(() => {
     fetchModels();
@@ -71,6 +75,7 @@ export default function Chat() {
 
   const clearTranscript = () => {
     setTranscript("");
+    router.refresh();
     setSpeedInsights({ sttRTF: null, ctps: null });
   }
 
@@ -87,8 +92,10 @@ export default function Chat() {
           },
           body: JSON.stringify({
             query: textToRefine,
+            apiKey: apiKey,
             systemPrompt: systemPrompt,
             model: selectedModel,
+            prevTranscript: transcript
           }),
         });
   
@@ -114,7 +121,7 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen p-4 overflow-x-hidden">
+    <div className="flex flex-col items-center min-h-screen p-4 overflow-x-hidden selection:bg-groqHighlight">
       <div className="w-full max-w-3xl flex flex-col items-center space-y-4">
         <div className="mb-6">
           <Link href={"https://groq.com"}>
@@ -127,6 +134,18 @@ export default function Chat() {
           </Link>
         </div>
         
+        <div className="w-full space-y-2">
+          <Label htmlFor="api-key" className="text-sm font-medium">
+            Groq API Key
+          </Label>
+          <Input
+            type="password"
+            placeholder="Enter your API key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            className="w-full rounded-none"
+          />
+        </div>
         <div className="w-full flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 sm:space-x-4">
           <Select onValueChange={setSelectedModel} value={selectedModel}>
             <SelectTrigger className="w-full sm:w-[180px] rounded-none">
@@ -192,7 +211,7 @@ export default function Chat() {
           />
         </div>
         
-        <Microphone onTranscription={submitTranscript} noSpeechProb={parseFloat(process.env.NEXT_PUBLIC_NO_SPEECH_THRESHOLD!)}/>
+        <Microphone apiKey={apiKey} onTranscription={submitTranscript} noSpeechProb={parseFloat(process.env.NEXT_PUBLIC_NO_SPEECH_THRESHOLD!)}/>
         
         <div className="flex space-x-2">
           <Button
