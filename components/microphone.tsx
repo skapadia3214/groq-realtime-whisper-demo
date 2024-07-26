@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Mic } from "lucide-react"; 
 import { useRef, useState, useEffect } from "react";
 
-  const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, apiKey }) => {
+const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, apiKey }) => {
   const [recording, setRecording] = useState(false);
   const isActive = useRef(true);
   const frzTranscript = useRef<string>("");
@@ -14,19 +14,14 @@ import { useRef, useState, useEffect } from "react";
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const [isSecureContext, setIsSecureContext] = useState(false);
+  const mimeType = useRef<string>("");
 
   useEffect(() => {
-    // Check if the current context is secure
-    setIsSecureContext(window.isSecureContext);
-    
-    // Check for browser support
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.error("getUserMedia is not supported on your browser!");
       return;
     }
     
-    // Clean up function
     return () => {
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
@@ -38,47 +33,80 @@ import { useRef, useState, useEffect } from "react";
       }
     };
   }, []);
-  
-  
-  const toggleRecording = async () => {
-    if (!isSecureContext) {
-      console.error("Microphone access is only available in a secure context (HTTPS or localhost)");
-      return;
-    }
 
-    if (recording) {
-      await stopRecording();
-    } else {
-      await startRecording();
+  const askForMicrophonePermissionAndDefineAudioMimeType = () => {
+    try {
+      if (mimeType.current === "") {
+        let options = { mimeType: "" };
+        if (MediaRecorder.isTypeSupported("audio/webm; codecs=opus")) {
+          options = { mimeType: "audio/webm; codecs=opus" };
+        } else if (MediaRecorder.isTypeSupported("audio/webm; codecs=vp9")) {
+          options = { mimeType: "audio/webm; codecs=vp9" };
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          options = { mimeType: "audio/webm" };
+        } else if (MediaRecorder.isTypeSupported("audio/mp4; codecs=opus")) {
+          options = { mimeType: "audio/mp4; codecs=opus" };
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          options = { mimeType: "audio/mp4" };
+        } else {
+          console.error("Microphone error: no suitable mimetype found for this device");
+        }
+
+        mimeType.current = options.mimeType;
+      }
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          stream.getTracks().forEach((track) => track.stop());
+        })
+        .catch((_) => {
+          console.error("Microphone error: Error accessing the microphone");
+        });
+    } catch (_) {
+      console.error("Microphone error: Error accessing the microphone");
     }
-    setRecording(!recording);
   };
 
-  const resetAndInitializeRecorder = async () => {
-    if (!isSecureContext) {
-      console.error("Microphone access is only available in a secure context (HTTPS or localhost)");
-      return;
-    }
-
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      for (const track of mediaRecorderRef.current.stream.getTracks()) {
-        track.stop();
-      }
-    }
-
+  const initializeMediaRecorder = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      isActive.current = true;
-      const options = { mimeType: "audio/webm" };
-      mediaRecorderRef.current = new MediaRecorder(stream, options);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: mimeType.current,
+      });
+
+      mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
-      mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable);
-      mediaRecorderRef.current.start(Number.parseInt(process.env.NEXT_PUBLIC_EMIT_DELAY || "1000"));
+
+      mediaRecorder.ondataavailable = handleDataAvailable;
+      mediaRecorder.start(Number.parseInt(process.env.NEXT_PUBLIC_EMIT_DELAY || "1000"));
+
+      return mediaRecorder;
     } catch (error) {
       console.error("Error accessing the microphone:", error);
+      throw error;
     }
+  };
+  
+  const toggleRecording = async () => {
+
+    if (!recording) {
+      // @ts-ignore
+      navigator.permissions.query({ name: "microphone" }).then((result) => {
+        if (result.state === "granted") {
+          initializeMediaRecorder().then(() => {
+            startRecording();
+          });
+        } else if (result.state === "prompt") {
+          askForMicrophonePermissionAndDefineAudioMimeType();
+        } else if (result.state === "denied") {
+          console.error("Unable to access the microphone. Please enable microphone permissions to proceed.");
+        }
+      });
+    } else {
+      await stopRecording();
+    }
+    setRecording(!recording);
   };
 
   const handleDataAvailable = async (event: BlobEvent) => {
@@ -87,7 +115,7 @@ import { useRef, useState, useEffect } from "react";
     }
 
     chunksRef.current.push(event.data);
-    const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+    const audioBlob = new Blob(chunksRef.current, { type: mimeType.current });
     const formData = new FormData();
     formData.append("audio", audioBlob);
     
@@ -96,7 +124,8 @@ import { useRef, useState, useEffect } from "react";
         formData, 
         apiKey,
         Date.now(), 
-        noSpeechProb
+        noSpeechProb,
+        mimeType.current
       );
 
       curTranscript.current = new_transcription;
@@ -107,7 +136,7 @@ import { useRef, useState, useEffect } from "react";
         curTranscript.current = "";
         setTranscript(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`);
         onTranscription(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`, rtf);
-        await resetAndInitializeRecorder();
+        await initializeMediaRecorder();
       } else {
         setTranscript(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`);
         onTranscription(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`, rtf);
@@ -118,7 +147,7 @@ import { useRef, useState, useEffect } from "react";
   };
 
   const startRecording = async () => {
-    await resetAndInitializeRecorder();
+    setRecording(true);
   };
 
   const stopRecording = async () => {
@@ -131,6 +160,7 @@ import { useRef, useState, useEffect } from "react";
         }
       }
     }
+    setRecording(false);
   };
 
   return (
@@ -139,11 +169,9 @@ import { useRef, useState, useEffect } from "react";
       className={cn(
         (recording ? "bg-red-400 animate-pulse" : "hover:bg-slate-200"),
         "h-20 w-20 border p-4 cursor-pointer rounded-full",
-        !isSecureContext && "opacity-50 cursor-not-allowed"
       )}
-      onClick={isSecureContext ? toggleRecording : () => console.error("Microphone access is only available in a secure context (HTTPS or localhost)")}
+      onClick={toggleRecording}
     />
-    {isSecureContext ? <p>Context is secure</p> : <p>Context is not secure</p>}
     </>
   );
 };

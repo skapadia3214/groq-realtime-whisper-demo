@@ -7,7 +7,8 @@ export const transcribeAudio = async (
   formData: FormData,
   apiKey: string,
   timestamp?: number,
-  noSpeechProb?: number
+  noSpeechProb?: number,
+  mimeType?: string
 ) => {
   const groq = new Groq({
     apiKey: apiKey
@@ -19,13 +20,13 @@ export const transcribeAudio = async (
   };
   try {
     let transcription: any;
-    const file = await toFile(audioBlob, `audio-${(timestamp || Date.now())}.wav`);
+    const file = await toFile(audioBlob, `audio-${(timestamp || Date.now())}.${mimeType?.split("/")[1] || "wav"}`);
     const startTime = performance.now();
     transcription = await groq.audio.transcriptions.create({
       file: file,
       model: config.whisperModel,
       response_format: 'verbose_json',
-      prompt: process.env.WHISPER_PROMPT || "GROQ",
+      prompt: process.env.WHISPER_PROMPT || "GROQ, Groq",
       language: "en"
     });
     const endTime = performance.now();
