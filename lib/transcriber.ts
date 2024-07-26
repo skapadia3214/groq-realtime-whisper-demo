@@ -7,7 +7,7 @@ export const transcribeAudio = async (
   formData: FormData,
   apiKey: string,
   timestamp?: number,
-  noSpeechProb?: number
+  noSpeechProb?: number,
 ) => {
   const groq = new Groq({
     apiKey: apiKey
@@ -19,13 +19,13 @@ export const transcribeAudio = async (
   };
   try {
     let transcription: any;
-    const file = await toFile(audioBlob, `audio-${(timestamp || Date.now())}.wav`);
+    const file = await toFile(audioBlob, `audio-${(timestamp || Date.now())}.${audioBlob.type.split("/")[1] || "webm"}`);
     const startTime = performance.now();
     transcription = await groq.audio.transcriptions.create({
       file: file,
       model: config.whisperModel,
       response_format: 'verbose_json',
-      prompt: process.env.WHISPER_PROMPT || "Groq, GROQ, Jonathan Ross, LPU, Whisper, OpenAI, Inference",
+      prompt: process.env.WHISPER_PROMPT || undefined,
       language: "en"
     });
     const endTime = performance.now();
@@ -34,7 +34,7 @@ export const transcribeAudio = async (
 
     const rtf = audioDuration / processingTime;
 
-    let filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 0.1) ? s.text : "").join(" ");
+    const filTranscription: string = transcription.segments.map((s: { no_speech_prob: number, text: string }) => s.no_speech_prob < (noSpeechProb || 0.1) ? s.text : "").join(" ");
     return {
       transcript: filTranscription,
       rtf: rtf

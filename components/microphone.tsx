@@ -15,6 +15,7 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const mimeType = useRef<string>("");
 
   const toggleRecording = () => {
     if (recording) {
@@ -34,7 +35,25 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       streamRef.current = stream;
       isActive.current = true;
-      const options = { mimeType: "audio/webm" };
+      const options = { mimeType: mimeType.current };
+      if (mimeType && mimeType.current === "") {
+        let options = { mimeType: "" };
+        if (MediaRecorder.isTypeSupported("audio/webm; codecs=opus")) {
+          options = { mimeType: "audio/webm; codecs=opus" };
+        } else if (MediaRecorder.isTypeSupported("audio/webm; codecs=vp9")) {
+          options = { mimeType: "audio/webm; codecs=vp9" };
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          options = { mimeType: "audio/webm" };
+        } else if (MediaRecorder.isTypeSupported("audio/mp4; codecs=opus")) {
+          options = { mimeType: "audio/mp4; codecs=opus" };
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          options = { mimeType: "audio/mp4" };
+        } else {
+          mimeType.current = "audio/webm";
+        }
+
+        mimeType.current = options.mimeType;
+      }
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
       mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable);
@@ -48,7 +67,7 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
     }
 
     chunksRef.current.push(event.data);
-    const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+    const audioBlob = new Blob(chunksRef.current, { type: mimeType.current });
     const formData = new FormData();
     formData.append("audio", audioBlob);
     const { transcript: new_transcription, rtf } = await transcribeAudio(
