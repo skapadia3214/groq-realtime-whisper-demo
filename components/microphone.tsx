@@ -1,11 +1,11 @@
 "use client";
 import { transcribeAudio } from "@/lib/transcriber";
-import { MicrophoneProps } from "@/lib/types";
+import type { MicrophoneProps } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Mic } from "lucide-react";
-import React, { useRef, useState, useEffect } from "react";
+import { Mic } from "lucide-react"; 
+import { useRef, useState, useEffect } from "react";
 
-const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, apiKey }) => {
+  const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, apiKey }) => {
   const [recording, setRecording] = useState(false);
   const isActive = useRef(true);
   const frzTranscript = useRef<string>("");
@@ -19,24 +19,27 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
   useEffect(() => {
     // Check if the current context is secure
     setIsSecureContext(window.isSecureContext);
-
+    
     // Check for browser support
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.error("getUserMedia is not supported on your browser!");
       return;
     }
-
+    
     // Clean up function
     return () => {
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
       }
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        for (const track of streamRef.current.getTracks()) {
+          track.stop();
+        }
       }
     };
   }, []);
-
+  
+  
   const toggleRecording = async () => {
     if (!isSecureContext) {
       console.error("Microphone access is only available in a secure context (HTTPS or localhost)");
@@ -59,7 +62,9 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
 
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      for (const track of mediaRecorderRef.current.stream.getTracks()) {
+        track.stop();
+      }
     }
 
     try {
@@ -70,7 +75,7 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
       mediaRecorderRef.current = new MediaRecorder(stream, options);
       chunksRef.current = [];
       mediaRecorderRef.current.addEventListener("dataavailable", handleDataAvailable);
-      mediaRecorderRef.current.start(parseInt(process.env.NEXT_PUBLIC_EMIT_DELAY!) || 1000);
+      mediaRecorderRef.current.start(Number.parseInt(process.env.NEXT_PUBLIC_EMIT_DELAY || "1000"));
     } catch (error) {
       console.error("Error accessing the microphone:", error);
     }
@@ -96,16 +101,16 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
 
       curTranscript.current = new_transcription;
       
-      let audio_len = chunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0);
+      const audio_len = chunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0);
       if (audio_len >= 300000) {
-        frzTranscript.current += " " + curTranscript.current;
+        frzTranscript.current += ` ${curTranscript.current}`;
         curTranscript.current = "";
-        setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
-        onTranscription(frzTranscript.current.trim() + " " + curTranscript.current.trim(), rtf);
+        setTranscript(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`);
+        onTranscription(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`, rtf);
         await resetAndInitializeRecorder();
       } else {
-        setTranscript(frzTranscript.current.trim() + " " + curTranscript.current.trim());
-        onTranscription(frzTranscript.current.trim() + " " + curTranscript.current.trim(), rtf);
+        setTranscript(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`);
+        onTranscription(`${frzTranscript.current.trim()} ${curTranscript.current.trim()}`, rtf);
       }
     } catch (error) {
       console.error("Error transcribing audio:", error);
@@ -121,12 +126,15 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        for (const track of streamRef.current.getTracks()) {
+          track.stop();
+        }
       }
     }
   };
 
   return (
+    <>
     <Mic 
       className={cn(
         (recording ? "bg-red-400 animate-pulse" : "hover:bg-slate-200"),
@@ -135,6 +143,8 @@ const Microphone: React.FC<MicrophoneProps> = ({ onTranscription, noSpeechProb, 
       )}
       onClick={isSecureContext ? toggleRecording : () => console.error("Microphone access is only available in a secure context (HTTPS or localhost)")}
     />
+    {isSecureContext ? <p>Context is secure</p> : <p>Context is not secure</p>}
+    </>
   );
 };
 
