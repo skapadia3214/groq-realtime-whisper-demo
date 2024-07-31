@@ -33,7 +33,7 @@ export default function Chat() {
   const [autoRefine, setAutoRefine] = useState<boolean>(false);
   const [systemPrompt, setSystemPrompt] = useState<string>(DEFAULT_LLM_INSTRUCTION);
   const [models, setModels] = useState<Groq.Models.Model[]>([]);
-  const [cacheLLMResponse, setCacheLLMResponse] = useState<boolean>(false);
+  const [cacheLLMResponse, setCacheLLMResponse] = useState<boolean>(true);
   const [apiKey, setApiKey] = useState<string>("");
 
   const [speedInsights, setSpeedInsights] = useState<SpeedInsights>({ sttRTF: null, ctps: null, llmResponseCached: false });
