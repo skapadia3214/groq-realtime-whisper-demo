@@ -1,13 +1,10 @@
-import { ChatResponse } from '@/lib/types';
+import type { ChatResponse } from '@/lib/types';
+import { DEFAULT_LLM_INSTRUCTION, DEFAULT_LLM_MODEL } from '@/lib/constants';
 import Groq from 'groq-sdk';
-import { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions.mjs';
+import type { ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions.mjs';
 import { NextResponse } from 'next/server';
 
 
-const defaultInst = `\
-Your task is to correct any errors, improve grammar and clarity, \
-and ensure the transcript is coherent and accurate.\
-`
 export async function POST(req: Request): Promise<NextResponse<ChatResponse>> {
   const {
     query,
@@ -31,7 +28,7 @@ export async function POST(req: Request): Promise<NextResponse<ChatResponse>> {
   const SystemPrompt = `\
 You are an AI assistant that translates, converts transcripts based on the instructions given to you. \
 Instructions:
-${systemPrompt ? systemPrompt : defaultInst}
+${systemPrompt ? systemPrompt : DEFAULT_LLM_INSTRUCTION}
 The transcript is provided within the <Transcript></Transcript> tags. \
 Your response should be JSON formatted containing the changed transcript based on the instruction provided. \
 JSON schema:
@@ -71,7 +68,7 @@ For example, if the transcript has not changed and the previous refined transcri
     ]
   }
   const response = await client.chat.completions.create({
-    model: 'llama3-8b-8192',
+    model: model ? model : DEFAULT_LLM_MODEL,
     messages: messages,
     response_format: {'type': 'json_object'},
     ...args

@@ -13,17 +13,14 @@ export const transcribeAudio = async (
     apiKey: apiKey
   });
   const audioBlob = formData.get("audio") as Blob;
-  const config = {
-    whisperModelProvider: "groq",
-    whisperModel: "whisper-large-v3",
-  };
+
   try {
     let transcription: any;
     const file = await toFile(audioBlob, `audio-${(timestamp || Date.now())}.${audioBlob.type.split("/")[1] || "webm"}`);
     const startTime = performance.now();
     transcription = await groq.audio.transcriptions.create({
       file: file,
-      model: config.whisperModel,
+      model: "whisper-large-v3",
       response_format: 'verbose_json',
       prompt: process.env.WHISPER_PROMPT || undefined,
       language: "en"
