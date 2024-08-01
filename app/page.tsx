@@ -2,8 +2,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
+import { useCopyToClipboard } from "@uidotdev/usehooks";
 import ReactMarkdown from 'react-markdown';
 import{ LRUCache } from 'lru-cache';
 import Groq from 'groq-sdk';
@@ -16,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, ClipboardCopy, Check } from 'lucide-react';
 
 import type { ChatResponse } from '@/lib/types';
 import { SpeedInsights } from '@/lib/types';
@@ -37,6 +38,9 @@ export default function Chat() {
   const [apiKey, setApiKey] = useState<string>("");
 
   const [speedInsights, setSpeedInsights] = useState<SpeedInsights>({ sttRTF: null, ctps: null, llmResponseCached: false });
+  const [copiedText, copyToClipboard] = useCopyToClipboard();
+  const hasCopiedText = Boolean(copiedText);
+  const [microphoneKey, setMicrophoneKey] = useState<number>(0);
 
   useEffect(() => {
     fetchModels();
@@ -73,6 +77,7 @@ export default function Chat() {
     router.refresh();
     cache.clear();
     setSpeedInsights({ sttRTF: null, ctps: null, llmResponseCached: false });
+    setMicrophoneKey(prevKey => prevKey + 1);
   }
 
   const handleRefineTranscript = async (textToRefine: string = transcript) => {
@@ -262,7 +267,12 @@ export default function Chat() {
           />
         </div>
         
-        <Microphone apiKey={apiKey} onTranscription={submitTranscript} noSpeechProb={Number.parseFloat(process.env.NEXT_PUBLIC_NO_SPEECH_THRESHOLD!)}/>
+        <Microphone 
+          key={microphoneKey}
+          apiKey={apiKey}
+          onTranscription={submitTranscript}
+          noSpeechProb={Number.parseFloat(process.env.NEXT_PUBLIC_NO_SPEECH_THRESHOLD!)}
+        />
         
         <div className="flex space-x-2">
           <Button
@@ -308,6 +318,22 @@ export default function Chat() {
         </div>
         
         <div className="w-full p-4 border max-h-60 overflow-auto">
+          <button className="w-full flex justify-end" onClick={() => {
+            copyToClipboard(transcript);
+            setTimeout(() => copyToClipboard(""), 2000);
+          }}>
+            {hasCopiedText ? (
+              <Check
+                size={16}
+                className="text-gray-500 cursor-pointer"
+                onAnimationEnd={() => {
+                  setTimeout(() => copyToClipboard(""), 2000);
+                }}
+              />
+            ) : (
+              <ClipboardCopy size={16} className="text-gray-500 cursor-pointer" />
+            )}
+          </button>
           <ReactMarkdown className="text-left text-md text-[#434343]">
             {transcript}
           </ReactMarkdown>
